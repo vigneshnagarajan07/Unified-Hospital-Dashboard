@@ -1,0 +1,6 @@
+{
+    "source_directories": ["."],
+    "python_version": "3.13",
+    "site_package_search_strategy": "all",
+    "strict": false
+}

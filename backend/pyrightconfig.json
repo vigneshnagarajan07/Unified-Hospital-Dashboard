@@ -1,0 +1,13 @@
+{
+    "include": ["."],
+    "pythonVersion": "3.13",
+    "pythonPlatform": "Windows",
+    "typeCheckingMode": "basic",
+    "extraPaths": [
+        ".",
+        "C:/Users/MAHATHY/AppData/Roaming/Python/Python313/site-packages"
+    ],
+    "useLibraryCodeForTypes": true,
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none"
+}

@@ -1,0 +1,16 @@
+{
+    "include": ["backend"],
+    "pythonVersion": "3.13",
+    "pythonPlatform": "Windows",
+    "typeCheckingMode": "basic",
+    "extraPaths": [
+        "backend",
+        "C:/Users/MAHATHY/AppData/Roaming/Python/Python313/site-packages",
+        "C:/Program Files/Python313/Lib/site-packages"
+    ],
+    "useLibraryCodeForTypes": true,
+    "reportMissingImports": "none",
+    "reportMissingModuleSource": "none",
+    "reportUnknownVariableType": "none",
+    "reportUnknownMemberType": "none"
+}

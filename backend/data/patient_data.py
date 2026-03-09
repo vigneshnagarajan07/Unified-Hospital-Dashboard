@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Apollo Hospital | GKM_8 Intelligence Platform
+# PrimeCare Hospital | GKM_8 Intelligence Platform
 # patient_data.py — Patient records mock database
 # 10 realistic inpatients with full journey data
 # ─────────────────────────────────────────────────────────────

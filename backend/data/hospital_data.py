@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Apollo Hospital | GKM_8 Intelligence Platform
+# PrimeCare Hospital | GKM_8 Intelligence Platform
 # hospital_data.py — Master hospital & department data
 # Single source of truth for all modules
 # ─────────────────────────────────────────────────────────────
@@ -9,7 +9,7 @@ from datetime import datetime
 # ── Hospital Meta ─────────────────────────────────────────────
 
 APOLLO_HOSPITAL_INFO = {
-    "name"          : "Apollo Hospital",
+    "name"          : "PrimeCare Hospital",
     "location"      : "Chennai, Tamil Nadu",
     "address"       : "21 Greams Lane, Off Greams Road, Chennai - 600006",
     "accreditation" : "NABH Accredited",

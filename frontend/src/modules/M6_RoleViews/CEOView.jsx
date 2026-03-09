@@ -20,7 +20,7 @@ export default function CEOView() {
         <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xl">CH</div>
         <div>
           <h3 className="font-bold text-lg text-slate-900">Dr. Chief Executive</h3>
-          <p className="text-slate-500 text-sm">Apollo Hospital Network</p>
+          <p className="text-slate-500 text-sm">PrimeCare Hospital Network</p>
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Apollo Hospital | GKM_8 Intelligence Platform
+# PrimeCare Hospital | GKM_8 Intelligence Platform
 # forecasting.py — M7 rule-based 48hr forecast engine
 # No ML needed — projects from 7-day trend + day patterns
 # ─────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// Apollo Hospital | GKM_8 Intelligence Platform
+// PrimeCare Hospital | GKM_8 Intelligence Platform
 // PatientPortal.jsx — Personal health journey dashboard
 // Sections: Profile, Vitals, Prescriptions, Lab Reports,
 //           Billing, Discharge Checklist
@@ -396,7 +396,7 @@ export default function PatientPortal({ onLogout }) {
                             <Heart size={16} className="text-white" />
                         </div>
                         <div>
-                            <span className="font-bold text-slate-800 text-sm">Apollo Hospital</span>
+                            <span className="font-bold text-slate-800 text-sm">PrimeCare Hospital</span>
                             <span className="text-slate-400 text-sm"> · Patient Portal</span>
                         </div>
                     </div>

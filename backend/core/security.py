@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Apollo Hospital | GKM_8 Intelligence Platform
+# PrimeCare Hospital | GKM_8 Intelligence Platform
 # security.py — Simulated JWT auth and role verification
 # No real passwords — role picker on frontend sets the role
 # ─────────────────────────────────────────────────────────────

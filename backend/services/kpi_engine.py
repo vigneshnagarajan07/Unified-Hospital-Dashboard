@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Apollo Hospital | GKM_8 Intelligence Platform
+# PrimeCare Hospital | GKM_8 Intelligence Platform
 # kpi_engine.py — M1 + M2 business logic
 # Computes aggregates, KPIs, health score from department data
 # ─────────────────────────────────────────────────────────────

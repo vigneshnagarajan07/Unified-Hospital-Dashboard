@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Apollo Hospital | GKM_8 Intelligence Platform
+# PrimeCare Hospital | GKM_8 Intelligence Platform
 # analytics.py — KPI, summary and forecast endpoints
 # Used by: Admin, Department Head dashboards
 # ─────────────────────────────────────────────────────────────

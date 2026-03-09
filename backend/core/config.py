@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Apollo Hospital | GKM_8 Intelligence Platform
+# PrimeCare Hospital | GKM_8 Intelligence Platform
 # config.py — App configuration and environment variables
 # ─────────────────────────────────────────────────────────────
 
@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── App settings ──────────────────────────────────────────────
-APP_TITLE       = "Apollo Hospital — GKM_8 Intelligence Platform"
+APP_TITLE       = "PrimeCare Hospital — GKM_8 Intelligence Platform"
 APP_VERSION     = "2.0.0"
 FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")
 

@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// Apollo Hospital | GKM_8 Intelligence Platform
+// PrimeCare Hospital | GKM_8 Intelligence Platform
 // API Client — all endpoint definitions
 // ─────────────────────────────────────────────────────────────
 

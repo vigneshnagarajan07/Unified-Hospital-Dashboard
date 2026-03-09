@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Apollo Hospital | GKM_8 Intelligence Platform
+# PrimeCare Hospital | GKM_8 Intelligence Platform
 # main.py — FastAPI application entry point
 # ─────────────────────────────────────────────────────────────
 
@@ -34,7 +34,7 @@ app.include_router(staff.router,     prefix="/api/staff",     tags=["Staff"])
 @app.get("/")
 def root():
     return {
-        "status"  : "Apollo Hospital GKM_8 API running",
+        "status"  : "PrimeCare Hospital GKM_8 API running",
         "version" : APP_VERSION,
         "docs"    : "/docs",
     }

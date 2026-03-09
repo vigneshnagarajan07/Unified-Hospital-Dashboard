@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Apollo Hospital | GKM_8 Intelligence Platform
+# PrimeCare Hospital | GKM_8 Intelligence Platform
 # insights.py — Anomaly detection and AI insight endpoints
 # ─────────────────────────────────────────────────────────────
 

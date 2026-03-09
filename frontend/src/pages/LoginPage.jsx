@@ -268,7 +268,7 @@ export default function LoginPage({ onRoleSelected }) {
             {/* ── Footer ── */}
             <div className="border-t border-slate-200 bg-white/50 py-4">
                 <p className="text-center text-xs text-slate-400">
-                    Apollo Hospitals
+                    PrimeCare Hospitals
                 </p>
             </div>
 

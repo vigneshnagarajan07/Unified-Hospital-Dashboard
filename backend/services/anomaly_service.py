@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Apollo Hospital | GKM_8 Intelligence Platform
+# PrimeCare Hospital | GKM_8 Intelligence Platform
 # anomaly_service.py — M3 rule-based anomaly detection engine
 # ─────────────────────────────────────────────────────────────
 

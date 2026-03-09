@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Apollo Hospital | GKM_8 Intelligence Platform
+# PrimeCare Hospital | GKM_8 Intelligence Platform
 # repository.py — Data access abstraction layer
 # All modules query data through this layer only
 # ─────────────────────────────────────────────────────────────

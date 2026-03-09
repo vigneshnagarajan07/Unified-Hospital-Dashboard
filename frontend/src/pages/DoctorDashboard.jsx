@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// Apollo Hospital | GKM_8 Intelligence Platform
+// PrimeCare Hospital | GKM_8 Intelligence Platform
 // DoctorDashboard.jsx — My Patients, OPD Stats,
 //   Critical Alerts, Today's Schedule
 // Demo: Dr. Ramesh Iyer · Cardiology (DOC001)
@@ -363,7 +363,7 @@ export default function DoctorDashboard({ onLogout }) {
                             <Stethoscope size={16} className="text-white" />
                         </div>
                         <div>
-                            <span className="font-bold text-slate-800 text-sm">Apollo Hospital</span>
+                            <span className="font-bold text-slate-800 text-sm">PrimeCare Hospital</span>
                             <span className="text-slate-400 text-sm"> · Doctor Dashboard</span>
                         </div>
                     </div>

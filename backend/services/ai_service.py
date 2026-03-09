@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────
-# Apollo Hospital | GKM_8 Intelligence Platform
+# PrimeCare Hospital | GKM_8 Intelligence Platform
 # ai_service.py — AI insights using Groq (free tier)
 # Falls back to simulated insights if no API key
 # ─────────────────────────────────────────────────────────────
@@ -149,7 +149,7 @@ def generate_insights(departments: list, anomalies: list) -> list:
         ]
 
         prompt = f"""
-You are an AI hospital operations analyst for Apollo Hospital Chennai.
+You are an AI hospital operations analyst for PrimeCare Hospital Chennai.
 Analyse this real-time data and return EXACTLY 5 insights as a JSON array.
 
 Department data:

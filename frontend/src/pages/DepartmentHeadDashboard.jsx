@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// Apollo Hospital | GKM_8 Intelligence Platform
+// PrimeCare Hospital | GKM_8 Intelligence Platform
 // DepartmentHeadDashboard.jsx — Dept KPIs, Staff Roster,
 //   Anomalies, Surgery Schedule (scoped to one department)
 // Demo: General Medicine — Dr. Priya Subramaniam
@@ -331,7 +331,7 @@ export default function DepartmentHeadDashboard({ onLogout }) {
                             <Building2 size={16} className="text-white" />
                         </div>
                         <div>
-                            <span className="font-bold text-slate-800 text-sm">Apollo Hospital</span>
+                            <span className="font-bold text-slate-800 text-sm">PrimeCare Hospital</span>
                             <span className="text-slate-400 text-sm"> · Department Head</span>
                         </div>
                     </div>

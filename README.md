@@ -16,56 +16,74 @@ anomaly detection, and role-based hospital operations monitoring.
 ## Repository Structure
 
 ```text
-hospital-dashboard/
-├── README.md                      # This file — full project guide
+├── README.md
 ├── backend/
-│   ├── main.py                    # FastAPI application instance & CORS setup
+│   ├── main.py                    # FastAPI app & routing entrypoint
 │   ├── requirements.txt
-│   ├── core/                      # App configuration & Auth
+│   ├── core/                      # App configuration & security
 │   │   ├── config.py              # Environment vars, API keys (Groq)
-│   │   └── security.py            # JWT handling, Role verifications
-│   ├── api/                       # Interface Layer
-│   │   ├── dependencies.py        # RBAC: get_current_user, require_role
-│   │   └── routers/               # Grouped by RESOURCE
-│   │       ├── analytics.py       # Endpoints for KPI and forecast fetching
-│   │       ├── insights.py        # Endpoints for AI & Anomalies
-│   │       ├── patients.py        # Patient endpoints
-│   │       └── staff.py           # Staff/Bed endpoints
-│   ├── services/                  # Business Logic Layer
-│   │   ├── kpi_engine.py          # Logic for KPIs & Aggregates
-│   │   ├── anomaly_service.py     # Rule-based Anomaly detection
-│   │   ├── ai_service.py          # Groq LLM integration (Insights & Recs)
-│   │   └── forecasting.py         # 48-hour trend forecasting
-│   ├── schemas/                   # Pydantic Models (Validation)
-│   │   ├── user.py                
-│   │   ├── patient.py             
-│   │   └── metrics.py             
-│   └── data/                      # Data Access Layer
-│       ├── repository.py          # Abstraction layer to query the mock data
-│       ├── hospital_data.py       # Mock DB: Departments, beds
-│       ├── patient_data.py        # Mock DB: Patient records
-│       └── staff_data.py          # Mock DB: Staff roster
+│   │   └── security.py            # Auth / security helpers
+│   ├── api/                       # Public API surface (versioned routers)
+│   │   └── routers/
+│   │       ├── dashboard.py       # Composite dashboard payloads
+│   │       ├── analytics.py       # KPI & metrics endpoints
+│   │       ├── patients.py        # Patient-centric endpoints
+│   │       ├── staff.py           # Staff / bed endpoints
+│   │       └── insights.py        # AI insights & anomaly surfacing
+│   ├── routers/                   # Legacy metric-specific routers (M1–M7)
+│   │   ├── m1_aggregation.py
+│   │   ├── m2_kpi.py
+│   │   ├── m3_anomaly.py
+│   │   ├── m4_insights.py
+│   │   ├── m5_recommendations.py
+│   │   ├── m6_roles.py
+│   │   └── m7_forecast.py
+│   ├── services/                  # Intelligence & business-logic layer
+│   │   ├── data_aggregator.py
+│   │   ├── kpi_engine.py
+│   │   ├── anomaly_service.py
+│   │   ├── anomaly_detector.py
+│   │   ├── prediction_engine.py
+│   │   ├── forecasting.py
+│   │   ├── insight_engine.py
+│   │   ├── recommendation_engine.py
+│   │   ├── root_cause_engine.py
+│   │   ├── hospital_agent.py
+│   │   └── ai_service.py
+│   ├── models/                    # SQLAlchemy / ORM models
+│   │   └── models.py
+│   ├── database/                  # DB connection & session management
+│   │   └── db.py
+│   ├── schemas/                   # Pydantic schemas (if used)
+│   └── data/                      # Mock / seed data and repositories
+│       ├── repository.py
+│       ├── hospital_data.py
+│       ├── patient_data.py
+│       └── staff_data.py
 └── frontend/
     ├── package.json
-    ├── vite.config.js             # Vite proxy → backend port 8000
+    ├── vite.config.js
     ├── tailwind.config.js
     └── src/
-        ├── App.jsx                # Main router & App wrapper
-        ├── index.css
-        ├── api/                   
-        │   └── client.js          # Axios/Fetch setup and endpoint mappings
-        ├── pages/                 # Route entries grouping features by role
-        │   ├── LoginPage.jsx                
+        ├── App.jsx                # Top-level routes & layout
+        ├── main.jsx               # React entrypoint
+        ├── index.css              # Global styling (Tailwind)
+        ├── api/
+        │   └── client.js          # API client / axios wrapper
+        ├── pages/                 # Role-based dashboards
+        │   ├── LoginPage.jsx
         │   ├── AdminDashboard.jsx
         │   ├── DoctorDashboard.jsx
         │   ├── DepartmentHeadDashboard.jsx
-        │   ├── FloorSupervisorDashboard.jsx
         │   └── PatientPortal.jsx
-        └── components/            # Reusable UI components
-            ├── Navbar.jsx
-            ├── Sidebar.jsx
-            ├── KPICard.jsx
-            └── ...
+        └── modules/               # Feature modules (M1–M7)
+            ├── M1_DataAggregation/
+            ├── M2_KPIEngine/
+            ├── M3_AnomalyDetection/
+            ├── M4_AIInsights/
+            ├── M5_Recommendations/
+            ├── M6_RoleViews/
+            └── M7_Forecast/
 ```
 
 ---
@@ -75,7 +93,7 @@ hospital-dashboard/
 ### 1. Clone the repo
 ```bash
 git clone https://github.com/vigneshnagarajan07/VITC-GlitchCon-HospitalDashboard.git
-cd VITC-GlitchCon-HospitalDashboard/hospital-dashboard
+cd VITC-GlitchCon-HospitalDashboard
 ```
 
 ### 2. Backend setup

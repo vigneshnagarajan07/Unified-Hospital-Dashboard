@@ -6,14 +6,15 @@
 // Demo patient: APL-2024-0847 (Senthil Kumar)
 // ─────────────────────────────────────────────────────────────
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
     Heart, Thermometer, Activity, Wind,
     Pill, FlaskConical, Receipt, ClipboardList,
     UserCircle, LogOut, RefreshCw, AlertCircle,
     CheckCircle2, Circle, ChevronDown, ChevronUp,
     ArrowUp, ArrowDown, Minus, BedDouble, Calendar,
-    Phone, MapPin, Droplets, Stethoscope
+    Phone, MapPin, Droplets, Stethoscope,
+    MessageCircle, Send, Bot
 } from 'lucide-react'
 import { patientApi } from '../api/client'
 
@@ -28,6 +29,7 @@ const PORTAL_SECTIONS = [
     { sectionId: 'labs',      label: 'Lab Reports',    Icon: FlaskConical  },
     { sectionId: 'billing',   label: 'Billing',        Icon: Receipt       },
     { sectionId: 'discharge', label: 'Discharge',      Icon: ClipboardList },
+    { sectionId: 'ask-ai',    label: 'Ask AI',         Icon: MessageCircle },
 ]
 
 
@@ -274,6 +276,177 @@ function ChecklistItem({ task, isCompleted, itemIndex }) {
     )
 }
 
+
+// ─── Helper : Ask AI Chatbox ──────────────────────────────────
+
+const SUGGESTED_QUESTIONS = [
+    "What should I avoid eating with my condition?",
+    "Why am I taking Aspirin?",
+    "When can I go back to normal activities?",
+    "What does my blood pressure reading mean?",
+]
+
+function AskAISection({ patientId, patientData }) {
+    const [messages,    setMessages]    = useState([
+        {
+            role    : 'assistant',
+            text    : `Hello ${patientData?.name?.split(' ')[0] || 'there'}! I'm your AI health assistant. I can answer questions about your diagnosis, medications, and recovery. What would you like to know?`,
+            time    : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }
+    ])
+    const [inputText,   setInputText]   = useState('')
+    const [isAsking,    setIsAsking]    = useState(false)
+    const chatEndRef = React.useRef(null)
+
+    const scrollToBottom = () =>
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+
+    useEffect(() => { scrollToBottom() }, [messages])
+
+    const sendQuestion = async (questionText) => {
+        const question = questionText || inputText.trim()
+        if (!question || isAsking) return
+
+        const userMsg = {
+            role : 'user',
+            text : question,
+            time : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        }
+        setMessages(prev => [...prev, userMsg])
+        setInputText('')
+        setIsAsking(true)
+
+        try {
+            const res    = await patientApi.askAI(patientId, question)
+            const answer = res.data.answer
+            setMessages(prev => [...prev, {
+                role : 'assistant',
+                text : answer,
+                time : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            }])
+        } catch {
+            setMessages(prev => [...prev, {
+                role : 'assistant',
+                text : 'Sorry, I could not connect to the AI assistant. Please try again or speak to your nurse.',
+                time : new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            }])
+        } finally {
+            setIsAsking(false)
+        }
+    }
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            sendQuestion()
+        }
+    }
+
+    return (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+            {/* Chat header */}
+            <div className="flex items-center gap-3 px-5 py-4 bg-violet-50 border-b border-violet-100">
+                <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                    <Bot size={18} className="text-violet-600" />
+                </div>
+                <div>
+                    <p className="font-bold text-slate-800 text-sm">Apollo AI Health Assistant</p>
+                    <p className="text-xs text-slate-400">Powered by Groq · Ask about your diagnosis, medications, or recovery</p>
+                </div>
+                <span className="ml-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+                    Online
+                </span>
+            </div>
+
+            {/* Messages */}
+            <div className="h-80 overflow-y-auto px-5 py-4 space-y-4 bg-slate-50/50">
+                {messages.map((msg, msgIdx) => (
+                    <div
+                        key={msgIdx}
+                        className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                    >
+                        {/* Avatar */}
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                            msg.role === 'user' ? 'bg-rose-100' : 'bg-violet-100'
+                        }`}>
+                            {msg.role === 'user'
+                                ? <UserCircle size={16} className="text-rose-500" />
+                                : <Bot size={16} className="text-violet-500" />
+                            }
+                        </div>
+
+                        {/* Bubble */}
+                        <div className={`max-w-xs lg:max-w-md ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
+                            <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                                msg.role === 'user'
+                                    ? 'bg-rose-500 text-white rounded-tr-sm'
+                                    : 'bg-white border border-slate-200 text-slate-700 rounded-tl-sm shadow-sm'
+                            }`}>
+                                {msg.text}
+                            </div>
+                            <p className="text-xs text-slate-400 px-1">{msg.time}</p>
+                        </div>
+                    </div>
+                ))}
+
+                {/* Typing indicator */}
+                {isAsking && (
+                    <div className="flex gap-3">
+                        <div className="w-8 h-8 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+                            <Bot size={16} className="text-violet-500" />
+                        </div>
+                        <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-sm px-4 py-3 shadow-sm">
+                            <div className="flex gap-1 items-center h-4">
+                                <span className="w-2 h-2 rounded-full bg-violet-300 animate-bounce" style={{ animationDelay: '0ms' }} />
+                                <span className="w-2 h-2 rounded-full bg-violet-300 animate-bounce" style={{ animationDelay: '150ms' }} />
+                                <span className="w-2 h-2 rounded-full bg-violet-300 animate-bounce" style={{ animationDelay: '300ms' }} />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div ref={chatEndRef} />
+            </div>
+
+            {/* Suggested questions */}
+            <div className="px-5 py-3 border-t border-slate-100 flex gap-2 overflow-x-auto">
+                {SUGGESTED_QUESTIONS.map((sq, sqIdx) => (
+                    <button
+                        key={sqIdx}
+                        onClick={() => sendQuestion(sq)}
+                        disabled={isAsking}
+                        className="shrink-0 text-xs px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 hover:bg-violet-100 hover:text-violet-700 transition-colors border border-slate-200 hover:border-violet-200 disabled:opacity-50"
+                    >
+                        {sq}
+                    </button>
+                ))}
+            </div>
+
+            {/* Input bar */}
+            <div className="px-5 py-4 border-t border-slate-100 flex gap-3">
+                <input
+                    type="text"
+                    value={inputText}
+                    onChange={e => setInputText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Type your question here..."
+                    disabled={isAsking}
+                    className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-400 transition-all bg-slate-50 disabled:opacity-60"
+                />
+                <button
+                    onClick={() => sendQuestion()}
+                    disabled={!inputText.trim() || isAsking}
+                    className="w-10 h-10 rounded-xl bg-violet-500 text-white flex items-center justify-center hover:bg-violet-600 disabled:opacity-50 transition-all shadow-sm"
+                >
+                    <Send size={15} />
+                </button>
+            </div>
+
+        </div>
+    )
+}
 
 // ─── Main Patient Portal ──────────────────────────────────────
 
@@ -712,6 +885,21 @@ export default function PatientPortal({ onLogout }) {
                                 />
                             ))}
                         </div>
+                    </PatientSection>
+
+
+                    {/* ── Section 7 : Ask AI ── */}
+                    <PatientSection
+                        sectionId="ask-ai"
+                        title="Ask AI Health Assistant"
+                        subtitle="Ask questions about your diagnosis, medications, or recovery"
+                        badge={
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-100 text-violet-700 text-xs font-bold border border-violet-200">
+                                <Bot size={12} /> Powered by Groq
+                            </span>
+                        }
+                    >
+                        <AskAISection patientId={DEMO_PATIENT_ID} patientData={patientData} />
                     </PatientSection>
 
 

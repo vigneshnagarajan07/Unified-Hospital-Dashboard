@@ -37,6 +37,7 @@ export const patientApi = {
   getVitals: (id) => apiClient.get(`/patients/${id}/vitals`),
   getBill: (id) => apiClient.get(`/patients/${id}/bill`),
   getDischargeList: (id) => apiClient.get(`/patients/${id}/discharge-checklist`),
+  askAI: (id, question) => apiClient.post(`/patients/${id}/ask`, { question }),
 }
 
 // ── Staff endpoints ───────────────────────────────────────────

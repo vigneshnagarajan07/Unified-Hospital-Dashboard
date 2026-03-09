@@ -6,6 +6,7 @@
 
 import os
 import json
+import httpx
 from core.config import GROQ_API_KEY, GROQ_MODEL, GROQ_MAX_TOKENS
 
 
@@ -192,3 +193,64 @@ def generate_recommendations(anomalies: list) -> list:
     Can be replaced with Groq-powered recommendations
     """
     return SIMULATED_RECOMMENDATIONS
+
+
+def answer_patient_question(patient: dict, question: str) -> dict:
+    """
+    Answers a patient's health question using their medical context.
+    Uses Groq if available, falls back to rule-based responses.
+    """
+    diagnosis    = patient.get("diagnosis", "")
+    patient_name = patient.get("name", "Patient")
+    latest_vital = patient["vitals"][0] if patient.get("vitals") else {}
+
+    medications = []
+    if patient.get("prescriptions"):
+        for med in patient["prescriptions"][0].get("medications", []):
+            medications.append(f"{med['name']} {med['dose']}")
+
+    if not GROQ_API_KEY:
+        return {
+            "answer" : "I'm sorry, the AI assistant is currently unavailable. Please speak to your doctor or nurse for any health-related questions.",
+            "source" : "fallback",
+        }
+
+    try:
+        from groq import Groq
+        http_client = httpx.Client()
+        groq_client = Groq(api_key=GROQ_API_KEY, http_client=http_client)
+
+        prompt = f"""
+You are a compassionate hospital AI health assistant for PrimeCare Hospital Chennai.
+You are helping a patient named {patient_name} who is admitted with: {diagnosis}.
+
+Their current medications: {', '.join(medications) if medications else 'None listed'}
+Latest vitals: BP={latest_vital.get('blood_pressure','N/A')}, Pulse={latest_vital.get('pulse_bpm','N/A')}bpm, SpO2={latest_vital.get('spo2_pct','N/A')}%, Temp={latest_vital.get('temperature_f','N/A')}F
+
+The patient asks: "{question}"
+
+Instructions:
+- Answer in simple, friendly, non-technical language
+- Keep your answer to 3-4 sentences maximum
+- If the question requires a doctor's evaluation, say so clearly
+- Never diagnose or prescribe — only explain and reassure
+- Do NOT mention you are an AI in every sentence
+
+Respond with ONLY the answer text. No preamble, no JSON, no markdown.
+"""
+
+        response = groq_client.chat.completions.create(
+            model      = GROQ_MODEL,
+            max_tokens = 256,
+            messages   = [{"role": "user", "content": prompt}],
+        )
+
+        answer = response.choices[0].message.content.strip()
+        return { "answer": answer, "source": "groq" }
+
+    except Exception as chat_error:
+        print(f"Groq chat error: {chat_error}")
+        return {
+            "answer" : "I'm unable to answer right now. Please speak to your nurse or doctor for assistance.",
+            "source" : "fallback",
+        }

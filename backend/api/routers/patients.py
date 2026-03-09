@@ -3,12 +3,14 @@
 # patients.py — Patient portal and record endpoints
 # ─────────────────────────────────────────────────────────────
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 from data.repository import (
     fetch_all_patients,
     fetch_patient_by_id,
     fetch_patients_by_department,
 )
+from services.ai_service import answer_patient_question
 from datetime import datetime
 
 router = APIRouter()
@@ -95,4 +97,29 @@ def get_discharge_checklist(patient_id: str):
         "tasks_total"        : total_tasks,
         "completion_percent" : round((tasks_done / total_tasks) * 100),
         "ready_for_discharge": tasks_done == total_tasks,
+    }
+
+
+class PatientQuestion(BaseModel):
+    question: str
+
+
+@router.post("/{patient_id}/ask")
+def ask_patient_ai(patient_id: str, body: PatientQuestion):
+    """
+    Patient asks a health question — answered by Groq using their medical context.
+    """
+    patient = fetch_patient_by_id(patient_id)
+    if not patient:
+        raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found")
+
+    result = answer_patient_question(patient, body.question)
+
+    return {
+        "patient_id"  : patient_id,
+        "patient_name": patient["name"],
+        "question"    : body.question,
+        "answer"      : result["answer"],
+        "source"      : result["source"],
+        "timestamp"   : datetime.now().isoformat(),
     }

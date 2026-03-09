@@ -335,10 +335,36 @@ export default function PatientPortal({ onLogout }) {
     }, [])
 
 
-    // ── Sidebar scroll ─────────────────────────────────────────
+    // ── Scroll spy ─────────────────────────────────────────────
+    useEffect(() => {
+        if (!patientData) return
+
+        const NAVBAR_HEIGHT = 56
+        const OFFSET = 80
+
+        const handleScroll = () => {
+            let active = PORTAL_SECTIONS[0].sectionId
+            for (const { sectionId } of PORTAL_SECTIONS) {
+                const el = document.getElementById(sectionId)
+                if (!el) continue
+                const top = el.getBoundingClientRect().top
+                if (top <= NAVBAR_HEIGHT + OFFSET) active = sectionId
+            }
+            setActiveSection(active)
+        }
+
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        handleScroll()
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [patientData])
+
+    // ── Scroll to section on sidebar click ─────────────────────
     const scrollTo = (sectionId) => {
+        const el = document.getElementById(sectionId)
+        if (!el) return
+        const top = el.getBoundingClientRect().top + window.scrollY - 72
+        window.scrollTo({ top, behavior: 'smooth' })
         setActiveSection(sectionId)
-        document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
 
 
@@ -480,7 +506,7 @@ export default function PatientPortal({ onLogout }) {
 
 
                 {/* ── Main content ── */}
-                <main className="flex-1 px-6 py-6 overflow-y-auto">
+                <main className="flex-1 px-6 py-6">
 
 
                     {/* ── Section 1 : Profile ── */}

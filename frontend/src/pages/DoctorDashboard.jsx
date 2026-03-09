@@ -305,10 +305,36 @@ export default function DoctorDashboard({ onLogout }) {
     }, [])
 
 
-    // ── Scroll ─────────────────────────────────────────────────
+    // ── Scroll spy ─────────────────────────────────────────────
+    useEffect(() => {
+        if (!doctorData) return
+
+        const NAVBAR_HEIGHT = 56
+        const OFFSET = 80
+
+        const handleScroll = () => {
+            let active = SIDEBAR_SECTIONS[0].sectionId
+            for (const { sectionId } of SIDEBAR_SECTIONS) {
+                const el = document.getElementById(sectionId)
+                if (!el) continue
+                const top = el.getBoundingClientRect().top
+                if (top <= NAVBAR_HEIGHT + OFFSET) active = sectionId
+            }
+            setActiveSection(active)
+        }
+
+        window.addEventListener('scroll', handleScroll, { passive: true })
+        handleScroll()
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [doctorData])
+
+    // ── Scroll to section on sidebar click ─────────────────────
     const scrollTo = (id) => {
+        const el = document.getElementById(id)
+        if (!el) return
+        const top = el.getBoundingClientRect().top + window.scrollY - 72
+        window.scrollTo({ top, behavior: 'smooth' })
         setActiveSection(id)
-        document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
 
 
@@ -459,7 +485,7 @@ export default function DoctorDashboard({ onLogout }) {
 
 
                 {/* ── Main content ── */}
-                <main className="flex-1 px-6 py-6 overflow-y-auto">
+                <main className="flex-1 px-6 py-6">
 
 
                     {/* ── Section 1 : My Patients ── */}

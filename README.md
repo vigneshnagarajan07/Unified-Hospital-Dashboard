@@ -3,7 +3,10 @@ Dynamic Hospital Performance Dashboard
 > **VITC GlitchCon 2.0 Hackathon Submission**  
 > Team Auraman | SNU Chennai
 
-AI-powered, real-time operational intelligence for hospital performance monitoring. A comprehensive full-stack platform built with a modern Feature-Driven Frontend and Layered Domain-Driven Backend. 
+AI-powered, real-time operational intelligence for hospital performance monitoring. A comprehensive full-stack platform built with a modern Feature-Driven Frontend and Layered Domain-Driven Backend.
+
+AI-powered Hospital Intelligence Dashboard with predictive analytics,
+anomaly detection, and role-based hospital operations monitoring.
 
 **Stack:** React + Vite + Tailwind (Frontend) | Python + FastAPI + Pydantic (Backend) | Groq Llama 3 API (AI)  
 **Mode:** Real-time data, LLM-generated insights (with offline fallbacks), enterprise medical UI, and RBAC secure role-based views.

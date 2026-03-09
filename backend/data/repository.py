@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────────────────────
 # PrimeCare Hospital | GKM_8 Intelligence Platform
 # repository.py — Data access abstraction layer
-# All modules query data through this layer only
+# FIX: Added bed layout, pharmacy, and per-dept trend accessors
 # ─────────────────────────────────────────────────────────────
 
 from data.hospital_data import (
@@ -9,6 +9,8 @@ from data.hospital_data import (
     APOLLO_HOSPITAL_INFO,
     APOLLO_TREND_DATA,
     APOLLO_FINANCE,
+    APOLLO_BED_LAYOUT,
+    APOLLO_PHARMACY,
 )
 from data.patient_data import APOLLO_PATIENTS
 from data.staff_data    import APOLLO_STAFF
@@ -37,6 +39,29 @@ def fetch_trend_data():
 
 def fetch_finance_data():
     return APOLLO_FINANCE
+
+
+def fetch_pharmacy_data():
+    return APOLLO_PHARMACY
+
+
+# ── Bed layout queries (NEW) ──────────────────────────────────
+
+def fetch_all_bed_layouts():
+    return APOLLO_BED_LAYOUT
+
+
+def fetch_bed_layout_by_department(department_id: str):
+    return APOLLO_BED_LAYOUT.get(department_id, {})
+
+
+def fetch_dept_trend(department_id: str, metric: str):
+    """
+    Fetch per-department trend array.
+    metric: 'bed_occupancy' | 'opd_wait'
+    """
+    key = f"dept_{metric}"
+    return APOLLO_TREND_DATA.get(key, {}).get(department_id, [])
 
 
 # ── Patient queries ───────────────────────────────────────────

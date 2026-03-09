@@ -1,20 +1,27 @@
 # ─────────────────────────────────────────────────────────────
 # PrimeCare Hospital | GKM_8 Intelligence Platform
 # api/routers/dashboard.py — Role-specific Dashboard API
-# Delegates to hospital_agent.py for all intelligence data
+# FIX: Added all missing imports that caused NameError on every route
 # ─────────────────────────────────────────────────────────────
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from datetime import datetime
 
-router = APIRouter()
+# ── FIX: Import all helper functions that were being called but never imported ──
+from services.hospital_agent import (
+    get_admin_dashboard,
+    get_department_dashboard,
+    get_doctor_dashboard,
+    get_patient_dashboard,
+)
+from data.repository import fetch_patient_by_id
 
+router = APIRouter()
 
 
 # ─────────────────────────────────────────────────────────────
 # Admin / CEO Dashboard
-# Role: admin (same role for both Admin and CEO per system design)
 # ─────────────────────────────────────────────────────────────
 
 @router.get(
@@ -26,17 +33,6 @@ router = APIRouter()
     ),
 )
 def admin_dashboard():
-    """
-    GET /api/dashboard/admin
-
-    Payload includes:
-    - Hospital KPIs (bed occupancy, OPD wait, surgery rate, satisfaction)
-    - Health score (0-100 with grade)
-    - Anomaly alerts (critical + warning)
-    - Predicted KPI breaches (48-hr window)
-    - Ranked recommended actions
-    - Natural language insights
-    """
     try:
         data = get_admin_dashboard()
         return {
@@ -54,26 +50,8 @@ def admin_dashboard():
 @router.get(
     "/department/{department_id}",
     summary="Department Head Dashboard",
-    description=(
-        "Returns department-scoped KPIs, operational alerts, "
-        "root cause analysis, and recommendations."
-    ),
 )
 def department_dashboard(department_id: str):
-    """
-    GET /api/dashboard/department/{department_id}
-
-    department_id examples: cardiology, general_medicine, orthopedics,
-                             pediatrics, emergency, obstetrics
-
-    Payload includes:
-    - Department enriched KPI snapshot
-    - Department anomaly alerts
-    - Root cause explanations scoped to this department
-    - Recommendations scoped to this department
-    - Department insights
-    - Department predictions (48-hr)
-    """
     from data.repository import fetch_department_by_id
     dept = fetch_department_by_id(department_id)
     if not dept:
@@ -101,30 +79,12 @@ def department_dashboard(department_id: str):
 @router.get(
     "/doctor/{doctor_id}",
     summary="Doctor Dashboard",
-    description=(
-        "Returns doctor-specific schedule, patient queue, "
-        "and department-level alerts."
-    ),
 )
 def doctor_dashboard(doctor_id: str):
-    """
-    GET /api/dashboard/doctor/{doctor_id}
-
-    doctor_id examples: DOC001, DOC002, DOC003, DOC004, DOC005, DOC006
-
-    Payload includes:
-    - Doctor profile + shift details
-    - Patient queue (admitted patients under this doctor)
-    - Department anomaly alerts
-    - Timestamp
-    """
     data = get_doctor_dashboard(doctor_id)
 
     if "error" in data:
-        raise HTTPException(
-            status_code=404,
-            detail=data["error"]
-        )
+        raise HTTPException(status_code=404, detail=data["error"])
 
     return {
         **data,
@@ -139,33 +99,12 @@ def doctor_dashboard(doctor_id: str):
 @router.get(
     "/patient/{patient_id}",
     summary="Patient Dashboard",
-    description=(
-        "Returns patient-specific appointments, lab results, "
-        "billing summary, and allows feedback submission."
-    ),
 )
 def patient_dashboard(patient_id: str):
-    """
-    GET /api/dashboard/patient/{patient_id}
-
-    patient_id examples: APL-2024-0847, APL-2024-0901, APL-2024-0923
-
-    Payload includes:
-    - Patient admission details
-    - Appointments list
-    - Lab reports
-    - Billing summary (estimate)
-    - Vitals history
-    - Prescription list
-    - Discharge checklist
-    """
     data = get_patient_dashboard(patient_id)
 
     if "error" in data:
-        raise HTTPException(
-            status_code=404,
-            detail=data["error"]
-        )
+        raise HTTPException(status_code=404, detail=data["error"])
 
     return {
         **data,
@@ -187,11 +126,6 @@ class FeedbackBody(BaseModel):
     summary="Submit Patient Feedback",
 )
 def submit_feedback(patient_id: str, body: FeedbackBody):
-    """
-    POST /api/dashboard/patient/{patient_id}/feedback
-
-    Persists rating (1-5) and optional comment to PatientFeedback table.
-    """
     if body.rating < 1 or body.rating > 5:
         raise HTTPException(status_code=422, detail="Rating must be between 1 and 5.")
 
@@ -199,11 +133,17 @@ def submit_feedback(patient_id: str, body: FeedbackBody):
     if not patient:
         raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found.")
 
-    # Map mock patient_id to DB patient_id
     db_patient_map = {
         "APL-2024-0847": "PAT001",
         "APL-2024-0901": "PAT002",
         "APL-2024-0923": "PAT003",
+        "APL-2024-0931": "PAT004",
+        "APL-2024-0945": "PAT005",
+        "APL-2024-0958": "PAT006",
+        "APL-2024-0972": "PAT007",
+        "APL-2024-0983": "PAT008",
+        "APL-2024-0994": "PAT009",
+        "APL-2024-1005": "PAT010",
     }
     db_pid = db_patient_map.get(patient_id)
 
@@ -239,21 +179,14 @@ def submit_feedback(patient_id: str, body: FeedbackBody):
 
 
 # ─────────────────────────────────────────────────────────────
-# Full Agent Pipeline (for testing / admin triggers)
+# Full Agent Pipeline trigger
 # ─────────────────────────────────────────────────────────────
 
 @router.get(
     "/run-agent",
     summary="Trigger Full Intelligence Pipeline",
-    description="Manually trigger the hospital agent and return the complete pipeline result.",
 )
 def run_full_agent():
-    """
-    GET /api/dashboard/run-agent
-
-    Executes the entire 7-step intelligence pipeline:
-    collect → KPI → anomaly → root_cause → insight → recommendation → prediction
-    """
     from services.hospital_agent import run_hospital_agent
     try:
         result = run_hospital_agent()

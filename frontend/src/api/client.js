@@ -1,19 +1,52 @@
-import axios from 'axios';
+// ─────────────────────────────────────────────────────────────
+// Apollo Hospital | GKM_8 Intelligence Platform
+// API Client — all endpoint definitions
+// ─────────────────────────────────────────────────────────────
 
-const client = axios.create({
+import axios from 'axios'
+
+// ── Base instance ─────────────────────────────────────────────
+const apiClient = axios.create({
   baseURL: '/api',
   timeout: 10000,
-});
+  headers: { 'Content-Type': 'application/json' },
+})
 
-export const api = {
-  getAggregation: () => client.get('/m1/data'),
-  getKPIs: () => client.get('/m2/kpis'),
-  getAnomalies: () => client.get('/m3/anomalies'),
-  getInsights: () => client.get('/m4/insights'),
-  getRecommendations: () => client.get('/m5/recommendations'),
-  getRoleView: (roleEndpoint) => client.get(`/m6/${roleEndpoint}`),
-  getForecast: () => client.get('/m7/forecast'),
-  sendChat: (message) => client.post('/chat', { message })
-};
+// ── Analytics endpoints ───────────────────────────────────────
+export const analyticsApi = {
+  getSummary: () => apiClient.get('/analytics/summary'),
+  getDepartments: () => apiClient.get('/analytics/departments'),
+  getDepartment: (id) => apiClient.get(`/analytics/departments/${id}`),
+  getKPIs: () => apiClient.get('/analytics/kpis'),
+  getForecast: () => apiClient.get('/analytics/forecast'),
+}
 
-export default client;
+// ── Insights endpoints ────────────────────────────────────────
+export const insightsApi = {
+  getAnomalies: () => apiClient.get('/insights/anomalies'),
+  getAIInsights: () => apiClient.get('/insights/ai-insights'),
+  getRecommendations: () => apiClient.get('/insights/recommendations'),
+}
+
+// ── Patient endpoints ─────────────────────────────────────────
+export const patientApi = {
+  getAll: () => apiClient.get('/patients/'),
+  getById: (id) => apiClient.get(`/patients/${id}`),
+  getPrescriptions: (id) => apiClient.get(`/patients/${id}/prescriptions`),
+  getLabReports: (id) => apiClient.get(`/patients/${id}/lab-reports`),
+  getVitals: (id) => apiClient.get(`/patients/${id}/vitals`),
+  getBill: (id) => apiClient.get(`/patients/${id}/bill`),
+  getDischargeList: (id) => apiClient.get(`/patients/${id}/discharge-checklist`),
+}
+
+// ── Staff endpoints ───────────────────────────────────────────
+export const staffApi = {
+  getAll: () => apiClient.get('/staff/'),
+  getOnDuty: () => apiClient.get('/staff/on-duty'),
+  getDoctorsOnDuty: () => apiClient.get('/staff/doctors-on-duty'),
+  getById: (id) => apiClient.get(`/staff/${id}`),
+  getPatients: (id) => apiClient.get(`/staff/${id}/patients`),
+  getByDepartment: (id) => apiClient.get(`/staff/department/${id}`),
+}
+
+export default apiClient

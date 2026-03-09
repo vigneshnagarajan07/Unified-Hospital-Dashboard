@@ -1,27 +1,24 @@
 // ─────────────────────────────────────────────────────────────
-// Apollo_8 Hospital Dashboard | Team Auraman | VITC GlitchCon 2.0
-// App.jsx — Root router — handles role selection + dashboard routing
+// Apollo Hospital | GKM_8 Intelligence Platform
+// App.jsx — Root router handles role selection + dashboard routing
 // ─────────────────────────────────────────────────────────────
 
 import { useState } from 'react'
 import LoginPage from './pages/LoginPage'
+import AdminDashboard from './pages/AdminDashboard'
 
-// ── Placeholder components until each dashboard is built ─────
-function ComingSoon({ roleName }) {
+// ── Placeholder for dashboards not built yet ─────────────────
+function ComingSoon({ roleName, onLogout }) {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
       <div className="text-center">
         <div className="w-16 h-16 rounded-2xl bg-sky-100 flex items-center justify-center mx-auto mb-4">
           <span className="text-3xl">🏗️</span>
         </div>
-        <h2 className="text-xl font-bold text-slate-700 mb-2">
-          {roleName} Dashboard
-        </h2>
-        <p className="text-slate-400 text-sm mb-6">
-          This dashboard is being built next.
-        </p>
+        <h2 className="text-xl font-bold text-slate-700 mb-2">{roleName} Dashboard</h2>
+        <p className="text-slate-400 text-sm mb-6">Coming next!</p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={onLogout}
           className="px-5 py-2.5 bg-sky-500 text-white rounded-xl text-sm font-semibold hover:bg-sky-600 transition-colors"
         >
           ← Back to Login
@@ -31,32 +28,26 @@ function ComingSoon({ roleName }) {
   )
 }
 
-
-// ── Role → Dashboard mapping ──────────────────────────────────
-const ROLE_DASHBOARD_MAP = {
-  doctor: () => <ComingSoon roleName="Doctor / Nurse" />,
-  department_head: () => <ComingSoon roleName="Department Head" />,
-  admin: () => <ComingSoon roleName="Admin / CEO" />,
-  floor_supervisor: () => <ComingSoon roleName="Floor Supervisor" />,
-  patient: () => <ComingSoon roleName="Patient Portal" />,
-}
-
-
-// ─── Root App ─────────────────────────────────────────────────
-
 export default function App() {
 
   const [activeRole, setActiveRole] = useState(null)
 
-  // No role selected → show login page
   if (!activeRole) {
     return <LoginPage onRoleSelected={setActiveRole} />
   }
 
-  // Role selected → render that dashboard
-  const DashboardComponent = ROLE_DASHBOARD_MAP[activeRole]
+  const handleLogout = () => setActiveRole(null)
 
-  return DashboardComponent
-    ? <DashboardComponent />
-    : <LoginPage onRoleSelected={setActiveRole} />
+  if (activeRole === 'admin') {
+    return <AdminDashboard onLogout={handleLogout} />
+  }
+
+  const roleLabels = {
+    doctor: 'Doctor / Nurse',
+    department_head: 'Department Head',
+    floor_supervisor: 'Floor Supervisor',
+    patient: 'Patient Portal',
+  }
+
+  return <ComingSoon roleName={roleLabels[activeRole] || activeRole} onLogout={handleLogout} />
 }

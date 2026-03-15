@@ -1,0 +1,8 @@
+{
+    "source_directories": [],
+    "exclude_watch_subdirectories_by_default": true,
+    "python_version": "3.13",
+    "search_path": [],
+    "strict": false,
+    "ignore_all_errors": true
+}

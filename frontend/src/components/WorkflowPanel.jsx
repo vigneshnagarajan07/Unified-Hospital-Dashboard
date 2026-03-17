@@ -689,6 +689,7 @@ export default function WorkflowPanel({ role = 'admin', patientId = null }) {
   const [selectedPatient, setSelected]  = useState(patientId ? { patient_id: patientId } : null)
   const [toast, setToast]               = useState(null)
   const [workflowPatients, setWfPts]    = useState([])
+  const [summaryPatient, setSummaryPatient] = useState(null)
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type })
@@ -857,15 +858,27 @@ export default function WorkflowPanel({ role = 'admin', patientId = null }) {
         </div>
       )}
 
+      {/* Patient Summary View — Phase D */}
+      {summaryPatient && (
+        <div className="px-5 py-4">
+          <PatientSummaryCard
+            patientId={summaryPatient}
+            onClose={() => setSummaryPatient(null)}
+          />
+        </div>
+      )}
+
       {/* Workflow patients list */}
-      {!activeStep && workflowPatients.length > 0 && (
+      {!activeStep && !summaryPatient && workflowPatients.length > 0 && (
         <div className="px-5 py-4">
           <p className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">
             Recently Admitted via Workflow
           </p>
           <div className="space-y-2">
             {workflowPatients.slice(0, 5).map(p => (
-              <div key={p.patient_id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+              <div key={p.patient_id}
+                onClick={() => setSummaryPatient(p.patient_id)}
+                className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100 cursor-pointer hover:bg-sky-50 hover:border-sky-200 transition-all">
                 <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center shrink-0">
                   <Users size={13} className="text-sky-600" />
                 </div>
@@ -882,6 +895,7 @@ export default function WorkflowPanel({ role = 'admin', patientId = null }) {
                 }`}>
                   {p.status === 'discharged' ? 'Discharged' : p.is_critical ? '⚠ Critical' : 'Admitted'}
                 </span>
+                <ChevronRight size={14} className="text-slate-300 shrink-0" />
               </div>
             ))}
           </div>
@@ -889,7 +903,7 @@ export default function WorkflowPanel({ role = 'admin', patientId = null }) {
       )}
 
       {/* Empty state */}
-      {!activeStep && workflowPatients.length === 0 && (
+      {!activeStep && !summaryPatient && workflowPatients.length === 0 && (
         <div className="px-5 py-8 text-center">
           <div className="w-12 h-12 rounded-2xl bg-sky-50 flex items-center justify-center mx-auto mb-3">
             <Clipboard size={20} className="text-sky-400" />
@@ -904,6 +918,248 @@ export default function WorkflowPanel({ role = 'admin', patientId = null }) {
       )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+    </div>
+  )
+}
+
+
+// ── Patient Summary Card (Phase D — Unified Patient View) ────
+function PatientSummaryCard({ patientId, onClose }) {
+  const [data, setData]       = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [tab, setTab]         = useState('timeline')
+
+  useEffect(() => {
+    setLoading(true)
+    workflowApi.getPatientSummary(patientId)
+      .then(res => setData(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [patientId])
+
+  if (loading) return (
+    <div className="text-center py-10">
+      <RefreshCw size={20} className="animate-spin text-slate-400 mx-auto" />
+      <p className="text-xs text-slate-400 mt-2">Loading patient summary…</p>
+    </div>
+  )
+
+  if (!data) return (
+    <div className="text-center py-8">
+      <p className="text-sm text-slate-500">Patient not found</p>
+      <button onClick={onClose} className="mt-2 text-xs text-sky-500 hover:underline">← Back</button>
+    </div>
+  )
+
+  const pt  = data.patient || {}
+  const formatINR = (val) => val ? `₹${Number(val).toLocaleString('en-IN')}` : '₹0'
+
+  const TABS = [
+    { id: 'timeline',  label: 'Timeline',  Icon: Clock      },
+    { id: 'vitals',    label: 'Vitals',     Icon: Heart      },
+    { id: 'diagnoses', label: 'Diagnoses',  Icon: Stethoscope},
+    { id: 'pharmacy',  label: 'Pharmacy',   Icon: Pill       },
+    { id: 'billing',   label: 'Billing',    Icon: DollarSign },
+  ]
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <button onClick={onClose} className="text-xs text-sky-500 hover:underline mb-1 flex items-center gap-1">
+            <ChevronRight size={10} className="rotate-180" /> Back to list
+          </button>
+          <h3 className="text-lg font-black text-slate-800">{pt.name}</h3>
+          <p className="text-xs text-slate-400 mt-0.5">
+            {pt.patient_id} · {pt.age}y {pt.gender} · {pt.department_name}
+          </p>
+        </div>
+        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+          data.status === 'discharged' ? 'bg-slate-100 text-slate-500'
+            : pt.is_critical ? 'bg-red-100 text-red-700'
+            : 'bg-emerald-100 text-emerald-700'
+        }`}>
+          {data.status === 'discharged' ? 'Discharged' : pt.is_critical ? '⚠ Critical' : 'Admitted'}
+        </span>
+      </div>
+
+      {/* Quick stats */}
+      <div className="grid grid-cols-4 gap-2">
+        {[
+          { label: 'Vitals',    value: data.vitals_count || 0,              color: 'violet' },
+          { label: 'Diagnoses', value: data.diagnosis_history?.length || 0, color: 'blue'   },
+          { label: 'Rx Orders', value: data.pharmacy_orders?.total || 0,    color: 'emerald'},
+          { label: 'Billed',    value: formatINR(data.billing?.total_billed), color: 'amber' },
+        ].map(s => (
+          <div key={s.label} className={`rounded-xl border p-2.5 text-center bg-${s.color}-50 border-${s.color}-200`}>
+            <p className={`text-base font-black text-${s.color}-600`}>{s.value}</p>
+            <p className={`text-[10px] text-${s.color}-700 font-medium`}>{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1.5 border-b border-slate-100 pb-2">
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              tab === t.id ? 'bg-sky-100 text-sky-700' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+            }`}>
+            <t.Icon size={11} /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      <div className="max-h-80 overflow-y-auto pr-1">
+
+        {/* Timeline */}
+        {tab === 'timeline' && (
+          <div className="space-y-2">
+            {(data.timeline || []).length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-4">No events yet</p>
+            ) : data.timeline.map((ev, i) => {
+              const colors = {
+                admission: 'bg-sky-100 text-sky-600',
+                vitals: 'bg-violet-100 text-violet-600',
+                diagnosis: 'bg-blue-100 text-blue-600',
+                pharmacy: 'bg-emerald-100 text-emerald-600',
+                nurse_assignment: 'bg-amber-100 text-amber-600',
+                discharge: 'bg-red-100 text-red-600',
+              }
+              return (
+                <div key={i} className="flex gap-3 items-start">
+                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${colors[ev.type] || 'bg-slate-100 text-slate-500'}`}>
+                    <Clock size={10} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-slate-700">{ev.title}</p>
+                    <p className="text-[10px] text-slate-400">{ev.detail}</p>
+                    <p className="text-[10px] text-slate-300 mt-0.5">
+                      {ev.timestamp ? new Date(ev.timestamp).toLocaleString() : ''}
+                    </p>
+                  </div>
+                  {ev.has_alert && <span className="text-[9px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">⚠</span>}
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Vitals */}
+        {tab === 'vitals' && (
+          <div className="space-y-2">
+            {(data.vitals_history || []).length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-4">No vitals recorded</p>
+            ) : data.vitals_history.map((v, i) => (
+              <div key={i} className={`rounded-xl border p-3 ${v.has_alerts ? 'border-red-200 bg-red-50' : 'border-slate-100 bg-slate-50'}`}>
+                <div className="grid grid-cols-4 gap-2 text-center">
+                  {[
+                    { label: 'BP',    value: v.blood_pressure },
+                    { label: 'Pulse', value: `${v.pulse_bpm} bpm` },
+                    { label: 'SpO₂',  value: `${v.spo2_pct}%` },
+                    { label: 'Temp',  value: `${v.temperature_f}°F` },
+                  ].map(m => (
+                    <div key={m.label}>
+                      <p className="text-[10px] text-slate-400">{m.label}</p>
+                      <p className="text-xs font-bold text-slate-700">{m.value}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1.5">
+                  {v.recorded_by} · {v.recorded_at ? new Date(v.recorded_at).toLocaleString() : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Diagnoses */}
+        {tab === 'diagnoses' && (
+          <div className="space-y-2">
+            {(data.diagnosis_history || []).length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-4">No diagnoses yet</p>
+            ) : data.diagnosis_history.map((d, i) => (
+              <div key={i} className="rounded-xl border border-blue-200 bg-blue-50 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Stethoscope size={12} className="text-blue-600" />
+                  <p className="text-sm font-bold text-blue-800">{d.diagnosis}</p>
+                  <span className={`ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    d.severity === 'critical' ? 'bg-red-100 text-red-700'
+                      : d.severity === 'moderate' ? 'bg-amber-100 text-amber-700'
+                      : 'bg-emerald-100 text-emerald-700'
+                  }`}>{d.severity}</span>
+                </div>
+                {d.notes && <p className="text-xs text-slate-600 mb-1">{d.notes}</p>}
+                {d.medications?.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {d.medications.map((m, j) => (
+                      <span key={j} className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-blue-200 text-blue-700">
+                        💊 {m.name} {m.dose}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="text-[10px] text-slate-400 mt-1.5">
+                  By {d.diagnosed_by} · {d.diagnosed_at ? new Date(d.diagnosed_at).toLocaleString() : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Pharmacy */}
+        {tab === 'pharmacy' && (
+          <div className="space-y-2">
+            {(data.pharmacy_orders?.all || []).length === 0 ? (
+              <p className="text-sm text-slate-400 text-center py-4">No pharmacy orders</p>
+            ) : data.pharmacy_orders.all.map((o, i) => (
+              <div key={i} className={`rounded-xl border p-3 flex items-center gap-3 ${
+                o.status === 'pending' ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'
+              }`}>
+                <Pill size={14} className={o.status === 'pending' ? 'text-amber-600' : 'text-emerald-600'} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-slate-700">{o.medication} {o.dose}</p>
+                  <p className="text-[10px] text-slate-400">{o.frequency} · {o.duration}</p>
+                </div>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                  o.status === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'
+                }`}>{o.status === 'pending' ? 'Pending' : '✓ Dispensed'}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Billing */}
+        {tab === 'billing' && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Total Billed',      value: formatINR(data.billing?.total_billed),      color: 'violet' },
+                { label: 'Insurance Covered',  value: formatINR(data.billing?.insurance_covered), color: 'emerald'},
+                { label: 'Patient Due',        value: formatINR(data.billing?.patient_due),       color: 'red'    },
+              ].map(s => (
+                <div key={s.label} className={`rounded-xl border p-2.5 text-center bg-${s.color}-50 border-${s.color}-200`}>
+                  <p className={`text-sm font-black text-${s.color}-600`}>{s.value}</p>
+                  <p className={`text-[10px] text-${s.color}-700 font-medium`}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+            {data.billing?.by_category && Object.keys(data.billing.by_category).length > 0 && (
+              <div className="bg-white rounded-xl border border-slate-200 p-3">
+                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-2">By Category</p>
+                {Object.entries(data.billing.by_category).map(([cat, amt]) => (
+                  <div key={cat} className="flex justify-between text-xs py-1">
+                    <span className="text-slate-500 capitalize">{cat}</span>
+                    <span className="font-bold text-slate-700">{formatINR(amt)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

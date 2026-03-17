@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 
 const DEMO_CREDENTIALS = [
-    { username: 'admin',    password: 'admin123',    label: 'Admin / CEO',        role: 'admin',            icon: Shield,      color: 'sky'     },
+    { username: 'admin',    password: 'admin123',    label: 'Receptionist',       role: 'admin',            icon: Shield,      color: 'sky'     },
     { username: 'doctor',   password: 'doctor123',   label: 'Doctor',             role: 'doctor',           icon: Stethoscope, color: 'emerald' },
     { username: 'depthead', password: 'depthead123', label: 'Department Head',    role: 'department_head',  icon: TrendingUp,  color: 'violet'  },
     { username: 'floor',    password: 'floor123',    label: 'Floor Supervisor',   role: 'floor_supervisor', icon: BedDouble,   color: 'amber'   },

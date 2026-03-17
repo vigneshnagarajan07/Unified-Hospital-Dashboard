@@ -44,7 +44,7 @@ export default function App() {
 
   const handleLogout = () => setActiveRole(null)
 
-  if (activeRole === 'admin')            return <AdminDashboard           onLogout={handleLogout} />
+  if (activeRole === 'admin' || activeRole === 'receptionist') return <AdminDashboard onLogout={handleLogout} />
   if (activeRole === 'patient')          return <PatientPortal            onLogout={handleLogout} />
   if (activeRole === 'department_head')  return <DepartmentHeadDashboard  onLogout={handleLogout} />
   if (activeRole === 'doctor')           return <DoctorDashboard          onLogout={handleLogout} />

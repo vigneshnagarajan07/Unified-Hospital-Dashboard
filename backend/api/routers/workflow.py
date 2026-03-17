@@ -169,31 +169,10 @@ def dispense_medication(order_id: str, body: PharmacyDispenseRequest, db: Sessio
 
 @router.get("/patient/{patient_id}/summary")
 def get_patient_workflow_summary(patient_id: str, db: Session = Depends(get_db)):
-    patient = svc.get_workflow_patient(db, patient_id)
-    if not patient:
+    summary = svc.get_unified_patient_summary(db, patient_id)
+    if not summary:
         raise HTTPException(status_code=404, detail=f"Patient '{patient_id}' not found")
-    vitals         = svc.get_patient_vitals(db, patient_id)
-    all_orders     = svc.get_pharmacy_queue(db)
-    patient_orders = [o for o in all_orders if o["patient_id"] == patient_id]
-    billing        = svc.get_patient_billing(db, patient_id)
-    return {
-        "patient_id":      patient_id,
-        "patient_name":    patient.get("name"),
-        "status":          patient.get("status", "admitted"),
-        "department":      patient.get("department_name"),
-        "assigned_doctor": patient.get("assigned_doctor"),
-        "admission_date":  patient.get("admission_date"),
-        "diagnosis":       {"diagnosis": patient.get("diagnosis")},
-        "latest_vitals":   vitals[0] if vitals else None,
-        "vitals_history":  vitals[:5],
-        "pharmacy_orders": {
-            "total":     len(patient_orders),
-            "pending":   [o for o in patient_orders if o["status"] == "pending"],
-            "dispensed": [o for o in patient_orders if o["status"] == "dispensed"],
-        },
-        "billing":   billing,
-        "timestamp": datetime.now().isoformat(),
-    }
+    return summary
 
 
 # ─────────────────────────────────────────────────────────────

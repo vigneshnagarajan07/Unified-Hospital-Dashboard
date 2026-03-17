@@ -438,7 +438,7 @@ export default function AdminDashboard({ onLogout }) {
                         </div>
                         <div>
                             <span className="font-extrabold text-slate-800 text-sm tracking-tight">PrimeCare</span>
-                            <span className="text-slate-400 text-sm"> · Admin Dashboard</span>
+                            <span className="text-slate-400 text-sm"> · Receptionist Dashboard</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -501,7 +501,7 @@ export default function AdminDashboard({ onLogout }) {
                             </div>
                             <div className="hidden sm:block">
                                 <p className="text-xs font-bold text-slate-700">Mr. Arvind Kumar</p>
-                                <p className="text-[10px] text-slate-400">Administrator</p>
+                                <p className="text-[10px] text-slate-400">Receptionist</p>
                             </div>
                             <button onClick={onLogout} className="ml-1 p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all">
                                 <LogOut size={13} />

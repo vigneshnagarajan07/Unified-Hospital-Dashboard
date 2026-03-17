@@ -103,4 +103,30 @@ export const workflowApi = {
   markNotificationRead:    (id) => apiClient.patch(`/workflow/notifications/${id}/read`),
 }
 
+// ── Events (SSE) ──────────────────────────────────────────────
+export const eventsApi = {
+  /**
+   * Subscribe to real-time events via Server-Sent Events.
+   * @param {string} role - e.g. 'admin', 'doctor', 'nurse'
+   * @param {function} onEvent - callback(eventData) for each event
+   * @returns {EventSource} — call .close() to unsubscribe
+   */
+  subscribe: (role = 'admin', onEvent) => {
+    const baseUrl = import.meta.env.VITE_API_URL || ''
+    const es = new EventSource(`${baseUrl}/api/events/stream?role=${role}`)
+    es.onmessage = (e) => {
+      try {
+        const data = JSON.parse(e.data)
+        if (data.type !== 'heartbeat') {
+          onEvent(data)
+        }
+      } catch {}
+    }
+    es.onerror = () => {
+      // Auto-reconnect handled by browser
+    }
+    return es
+  },
+}
+
 export default apiClient

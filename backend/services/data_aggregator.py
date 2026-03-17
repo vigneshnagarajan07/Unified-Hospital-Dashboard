@@ -21,24 +21,46 @@ from data.repository import (
 
 def get_bed_occupancy_data(query_date: date | None = None) -> dict:
     """
-    Simulates a call to the Bed Management System.
-    Returns aggregated bed counts per department.
+    Bed occupancy data blending hardcoded totals with REAL DB admission counts.
+    Falls back to static data if DB is unavailable.
     """
     departments = fetch_all_departments()
     query_date  = query_date or date.today()
 
+    # Try to get real occupied-bed counts from DB
+    db_counts = {}
+    try:
+        from database.db import SessionLocal
+        from models.workflow_models import WorkflowPatient
+        from sqlalchemy import func
+        db = SessionLocal()
+        try:
+            rows = (
+                db.query(WorkflowPatient.department_id, func.count(WorkflowPatient.id))
+                .filter(WorkflowPatient.status == "admitted")
+                .group_by(WorkflowPatient.department_id)
+                .all()
+            )
+            db_counts = {dept_id: cnt for dept_id, cnt in rows}
+        finally:
+            db.close()
+    except Exception:
+        pass  # Fallback to static data
+
     dept_beds = []
     for dept in departments:
-        total     = dept["total_beds"]
-        occupied  = dept["occupied_beds"]
+        total    = dept["total_beds"]
+        # Prefer DB count; fall back to static occupied_beds
+        occupied = db_counts.get(dept["id"], dept["occupied_beds"])
+        occupied = min(occupied, total)  # Safety: can't exceed total
         icu_total = dept.get("icu_beds_total", 0)
         icu_occ   = dept.get("icu_beds_occupied", 0)
         dept_beds.append({
-            "department_id"   : dept["id"],
-            "department_name" : dept["name"],
-            "total_beds"      : total,
-            "occupied_beds"   : occupied,
-            "icu_beds_total"  : icu_total,
+            "department_id"    : dept["id"],
+            "department_name"  : dept["name"],
+            "total_beds"       : total,
+            "occupied_beds"    : occupied,
+            "icu_beds_total"   : icu_total,
             "icu_beds_occupied": icu_occ,
             "bed_occupancy_pct": round((occupied / total) * 100, 1) if total > 0 else 0.0,
         })
@@ -47,12 +69,12 @@ def get_bed_occupancy_data(query_date: date | None = None) -> dict:
     total_occupied = sum(d["occupied_beds"] for d in dept_beds)
 
     return {
-        "query_date"       : str(query_date),
+        "query_date"            : str(query_date),
         "hospital_occupancy_pct": round((total_occupied / total_beds) * 100, 1) if total_beds > 0 else 0.0,
-        "total_beds"       : total_beds,
-        "occupied_beds"    : total_occupied,
-        "available_beds"   : total_beds - total_occupied,
-        "by_department"    : dept_beds,
+        "total_beds"            : total_beds,
+        "occupied_beds"         : total_occupied,
+        "available_beds"        : total_beds - total_occupied,
+        "by_department"         : dept_beds,
     }
 
 
@@ -92,8 +114,7 @@ def get_opd_wait_times(query_date: date | None = None, department: str | None = 
 
 def get_billing_collection_report(date_range: int = 7) -> dict:
     """
-    Simulates a call to the Revenue Cycle Management system.
-    Returns billing and collection summary for the given date range (days).
+    Revenue report blending static trends with REAL billing data from DB.
     """
     finance = fetch_finance_data()
     trend   = fetch_trend_data()
@@ -105,10 +126,28 @@ def get_billing_collection_report(date_range: int = 7) -> dict:
     total_collected = round(total_billed * collection_rate / 100, 2)
     pending         = finance.get("pending_bills_lakh", 0) * 100000
 
+    # Overlay real DB billing totals if available
+    db_revenue = 0.0
+    try:
+        from database.db import SessionLocal
+        from models.workflow_models import BillingTransaction
+        from sqlalchemy import func
+        db = SessionLocal()
+        try:
+            result = db.query(func.coalesce(func.sum(BillingTransaction.amount), 0)).scalar()
+            db_revenue = float(result or 0)
+        finally:
+            db.close()
+    except Exception:
+        pass
+
+    # Blend: use whichever is larger (static sim or real DB)
+    effective_billed = max(total_billed, db_revenue)
+
     return {
         "date_range_days"       : date_range,
-        "total_billed_inr"      : total_billed,
-        "total_collected_inr"   : total_collected,
+        "total_billed_inr"      : effective_billed,
+        "total_collected_inr"   : round(effective_billed * collection_rate / 100, 2),
         "collection_rate_pct"   : collection_rate,
         "pending_bills_inr"     : pending,
         "avg_bill_inpatient"    : finance.get("avg_bill_inpatient", 0),
@@ -116,6 +155,7 @@ def get_billing_collection_report(date_range: int = 7) -> dict:
         "revenue_today_lakh"    : finance.get("revenue_today_lakh", 0),
         "revenue_mtd_lakh"      : finance.get("revenue_mtd_lakh", 0),
         "revenue_target_lakh"   : finance.get("revenue_target_lakh", 0),
+        "db_revenue_inr"        : db_revenue,  # Real DB total for CEO view
     }
 
 

@@ -559,6 +559,157 @@ def get_patient_billing(db: Session, patient_id: str) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────
+# Unified Patient Summary (Phase D)
+# ─────────────────────────────────────────────────────────────
+
+def get_unified_patient_summary(db: Session, patient_id: str) -> dict:
+    """
+    Returns a comprehensive view combining data from ALL roles:
+    doctor diagnosis, nurse vitals, pharmacy orders, billing, and nurse assignments.
+    """
+    patient = db.query(WorkflowPatient).filter(WorkflowPatient.patient_id == patient_id).first()
+    if not patient:
+        return None
+
+    # Full vitals timeline
+    vitals = (
+        db.query(VitalsLog)
+        .filter(VitalsLog.patient_id == patient_id)
+        .order_by(VitalsLog.recorded_at.desc())
+        .all()
+    )
+
+    # Full diagnosis history (not just latest)
+    diagnoses = (
+        db.query(DiagnosisRecord)
+        .filter(DiagnosisRecord.patient_id == patient_id)
+        .order_by(DiagnosisRecord.diagnosed_at.desc())
+        .all()
+    )
+
+    # All pharmacy orders
+    orders = (
+        db.query(PharmacyOrder)
+        .filter(PharmacyOrder.patient_id == patient_id)
+        .order_by(PharmacyOrder.ordered_at.desc())
+        .all()
+    )
+
+    # Nurse assignment history
+    assignments = (
+        db.query(NurseAssignment)
+        .filter(NurseAssignment.patient_id == patient_id)
+        .order_by(NurseAssignment.assigned_at.desc())
+        .all()
+    )
+
+    # Billing breakdown
+    billing_txns = db.query(BillingTransaction).filter(BillingTransaction.patient_id == patient_id).all()
+    total_billed = sum(t.amount for t in billing_txns)
+    by_category = {}
+    for t in billing_txns:
+        by_category[t.category] = by_category.get(t.category, 0) + t.amount
+
+    ins_pct = 0.7 if patient.insurance_provider and patient.insurance_provider != "None" else 0.0
+
+    # Build unified timeline events
+    timeline = []
+    timeline.append({
+        "type": "admission", "timestamp": patient.created_at.isoformat() if patient.created_at else "",
+        "title": "Patient Admitted", "detail": f"Dept: {patient.department_name}, Doctor: {patient.assigned_doctor}",
+    })
+    for v in vitals:
+        timeline.append({
+            "type": "vitals", "timestamp": v.recorded_at.isoformat() if v.recorded_at else "",
+            "title": "Vitals Recorded",
+            "detail": f"BP {v.blood_pressure}, Pulse {v.pulse_bpm}, SpO₂ {v.spo2_pct}%",
+            "has_alert": v.has_alerts,
+        })
+    for d in diagnoses:
+        meds = json.loads(d.medications) if d.medications else []
+        timeline.append({
+            "type": "diagnosis", "timestamp": d.diagnosed_at.isoformat() if d.diagnosed_at else "",
+            "title": f"Diagnosis: {d.diagnosis}",
+            "detail": f"Severity: {d.severity}, Meds: {len(meds)}, By: {d.diagnosed_by}",
+        })
+    for o in orders:
+        timeline.append({
+            "type": "pharmacy", "timestamp": o.ordered_at.isoformat() if o.ordered_at else "",
+            "title": f"Rx: {o.medication} {o.dose}",
+            "detail": f"Status: {o.status}, {o.frequency}",
+        })
+    for a in assignments:
+        nurse = db.query(Nurse).filter(Nurse.id == a.nurse_id).first()
+        timeline.append({
+            "type": "nurse_assignment", "timestamp": a.assigned_at.isoformat() if a.assigned_at else "",
+            "title": f"Nurse Assigned: {nurse.name if nurse else 'Unknown'}",
+            "detail": f"By: {a.assigned_by}",
+        })
+    if patient.status == "discharged":
+        timeline.append({
+            "type": "discharge", "timestamp": patient.discharge_date or "",
+            "title": "Patient Discharged",
+            "detail": f"Final diagnosis: {patient.diagnosis or 'N/A'}",
+        })
+
+    # Sort timeline by timestamp descending
+    timeline.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+
+    return {
+        "patient_id":      patient_id,
+        "patient":         _patient_to_dict(patient),
+        "status":          patient.status,
+        "department":      patient.department_name,
+        "assigned_doctor": patient.assigned_doctor,
+        "admission_date":  patient.admission_date,
+        "discharge_date":  patient.discharge_date,
+
+        # Vitals
+        "latest_vitals":   _vitals_to_dict(vitals[0]) if vitals else None,
+        "vitals_history":  [_vitals_to_dict(v) for v in vitals],
+        "vitals_count":    len(vitals),
+
+        # Diagnosis history
+        "current_diagnosis": patient.diagnosis,
+        "diagnosis_history": [_diagnosis_to_dict(d) for d in diagnoses],
+
+        # Nurse assignments
+        "nurse_assignments": [
+            {
+                "nurse_id":    a.nurse_id,
+                "nurse_name":  (db.query(Nurse).filter(Nurse.id == a.nurse_id).first() or Nurse(name="Unknown")).name,
+                "assigned_by": a.assigned_by,
+                "active":      a.active,
+                "assigned_at": a.assigned_at.isoformat() if a.assigned_at else None,
+                "notes":       a.notes,
+            }
+            for a in assignments
+        ],
+
+        # Pharmacy
+        "pharmacy_orders": {
+            "total":     len(orders),
+            "pending":   [_order_to_dict(o) for o in orders if o.status == "pending"],
+            "dispensed": [_order_to_dict(o) for o in orders if o.status == "dispensed"],
+            "all":       [_order_to_dict(o) for o in orders],
+        },
+
+        # Billing
+        "billing": {
+            "total_billed":      round(total_billed, 2),
+            "insurance_covered": round(total_billed * ins_pct, 2),
+            "patient_due":       round(total_billed * (1 - ins_pct), 2),
+            "by_category":       {k: round(v, 2) for k, v in by_category.items()},
+            "transactions":      [_txn_to_dict(t) for t in billing_txns],
+        },
+
+        # Unified timeline
+        "timeline":  timeline,
+        "timestamp": datetime.now().isoformat(),
+    }
+
+
+# ─────────────────────────────────────────────────────────────
 # Serializers
 # ─────────────────────────────────────────────────────────────
 
@@ -601,6 +752,19 @@ def _vitals_to_dict(v) -> dict:
         "alerts":           json.loads(v.alert_details) if v.alert_details else [],
         "recorded_by":      v.recorded_by,
         "recorded_at":      v.recorded_at.isoformat() if v.recorded_at else None,
+    }
+
+def _diagnosis_to_dict(d) -> dict:
+    return {
+        "id":            d.id,
+        "patient_id":    d.patient_id,
+        "diagnosis":     d.diagnosis,
+        "severity":      d.severity,
+        "notes":         d.notes,
+        "medications":   json.loads(d.medications) if d.medications else [],
+        "lab_tests":     json.loads(d.lab_tests) if d.lab_tests else [],
+        "diagnosed_by":  d.diagnosed_by,
+        "diagnosed_at":  d.diagnosed_at.isoformat() if d.diagnosed_at else None,
     }
 
 def _order_to_dict(o) -> dict:

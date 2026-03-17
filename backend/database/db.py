@@ -59,6 +59,135 @@ def init_db():
     finally:
         db.close()
 
+    # Seed workflow patients from APOLLO_PATIENTS
+    _seed_workflow_patients()
+
+
+def _seed_workflow_patients():
+    """Seed WorkflowPatient records from the in-memory APOLLO_PATIENTS list.
+
+    This ensures every patient from the hardcoded data exists in the DB,
+    making WorkflowPatient the single source of truth.
+    Skips if workflow patients already exist (idempotent).
+    """
+    import json
+    import uuid
+    from models.workflow_models import (
+        WorkflowPatient, VitalsLog, DiagnosisRecord,
+        PharmacyOrder, BillingTransaction,
+    )
+    from data.patient_data import APOLLO_PATIENTS
+
+    db = SessionLocal()
+    try:
+        if db.query(WorkflowPatient).count() > 0:
+            print("[DB] Workflow patients already seeded — skipping.")
+            return
+
+        for p in APOLLO_PATIENTS:
+            patient = WorkflowPatient(
+                patient_id         = p["patient_id"],
+                name               = p["name"],
+                age                = p.get("age"),
+                gender             = p.get("gender"),
+                blood_group        = p.get("blood_group"),
+                phone              = p.get("phone"),
+                address            = p.get("address"),
+                department_id      = p.get("department_id"),
+                department_name    = p.get("department_name"),
+                assigned_doctor    = p.get("assigned_doctor"),
+                assigned_doctor_id = p.get("assigned_doctor_id"),
+                ward               = p.get("ward"),
+                chief_complaint    = p.get("diagnosis", ""),
+                insurance_provider = p.get("bill_estimate", {}).get("insurance_provider"),
+                diagnosis          = p.get("diagnosis"),
+                is_critical        = p.get("is_critical", False),
+                status             = p.get("status", "admitted"),
+                admission_date     = p.get("admission_date"),
+                expected_discharge = p.get("expected_discharge"),
+            )
+            db.add(patient)
+            db.flush()
+
+            # Seed vitals
+            for v in p.get("vitals", []):
+                db.add(VitalsLog(
+                    patient_id     = patient.patient_id,
+                    blood_pressure = v.get("blood_pressure"),
+                    pulse_bpm      = v.get("pulse_bpm"),
+                    temperature_f  = v.get("temperature_f"),
+                    spo2_pct       = v.get("spo2_pct"),
+                    weight_kg      = v.get("weight_kg"),
+                    recorded_by    = p.get("assigned_doctor", "System"),
+                    notes          = "",
+                ))
+
+            # Seed diagnosis
+            if p.get("diagnosis"):
+                meds_list = [
+                    {
+                        "name":      med["name"],
+                        "dose":      med["dose"],
+                        "frequency": med["frequency"],
+                        "duration":  med["duration"],
+                    }
+                    for rx in p.get("prescriptions", [])
+                    for med in rx.get("medications", [])
+                ]
+                db.add(DiagnosisRecord(
+                    patient_id    = patient.patient_id,
+                    diagnosis     = p["diagnosis"],
+                    notes         = "",
+                    diagnosed_by  = p.get("assigned_doctor", "System"),
+                    medications   = json.dumps(meds_list),
+                ))
+
+            # Seed pharmacy orders from prescriptions
+            for rx in p.get("prescriptions", []):
+                for med in rx.get("medications", []):
+                    db.add(PharmacyOrder(
+                        order_id     = f"ORD-SEED-{uuid.uuid4().hex[:8].upper()}",
+                        patient_id   = patient.patient_id,
+                        patient_name = patient.name,
+                        department   = patient.department_name or "",
+                        medication   = med["name"],
+                        dose         = med["dose"],
+                        frequency    = med.get("frequency", ""),
+                        duration     = med.get("duration", ""),
+                        instructions = med.get("instructions", ""),
+                        ordered_by   = rx.get("doctor_name", p.get("assigned_doctor", "System")),
+                        status       = "dispensed",
+                        amount       = 150.0,  # default per-medication cost
+                    ))
+
+            # Seed billing from bill_estimate
+            bill = p.get("bill_estimate", {})
+            if bill:
+                for category, lakh_key in [
+                    ("room",      "room_charges_lakh"),
+                    ("doctor",    "doctor_fees_lakh"),
+                    ("pharmacy",  "pharmacy_lakh"),
+                    ("lab",       "lab_charges_lakh"),
+                    ("procedure", "procedure_charges_lakh"),
+                ]:
+                    amount_lakh = bill.get(lakh_key, 0)
+                    if amount_lakh > 0:
+                        db.add(BillingTransaction(
+                            patient_id  = patient.patient_id,
+                            description = f"{category.title()} charges",
+                            category    = category,
+                            amount      = amount_lakh * 100000,
+                        ))
+
+        db.commit()
+        print(f"[DB] Seeded {len(APOLLO_PATIENTS)} workflow patients with vitals, diagnoses, prescriptions, and billing.")
+
+    except SQLAlchemyError as e:
+        db.rollback()
+        print(f"[DB] Workflow patient seed error: {e}")
+    finally:
+        db.close()
+
 
 def _seed_mock_data():
     from models.models import (

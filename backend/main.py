@@ -37,7 +37,17 @@ async def on_startup():
 # ── CORS — allow Vite frontend ────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins     = [FRONTEND_ORIGIN, "http://127.0.0.1:5173"],
+    allow_origins     = [
+        FRONTEND_ORIGIN,
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174",
+        "http://127.0.0.1:3000",
+        "https://unified-hospital-dashboard.vercel.app",
+        "https://unified-hospital-dashboard-git-main-vigneshnagarajan07.vercel.app",
+    ],
     allow_credentials = True,
     allow_methods     = ["*"],
     allow_headers     = ["*"],

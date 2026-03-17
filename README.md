@@ -259,15 +259,7 @@ FRONTEND_ORIGIN=http://localhost:5173
 
 ---
 
-## Hospital — PrimeCare
 
-- **Location:** Chennai, Tamil Nadu
-- **Accreditation:** NABH
-- **Departments:** Cardiology, General Medicine, Orthopedics, Pediatrics, Emergency, Obstetrics & Gynaecology
-- **Beds:** 395 across all departments
-- **Demo data:** 30 days of realistic KPI history with injected anomalies for demonstration
-
----
 
 ## License
 
